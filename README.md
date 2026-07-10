@@ -158,21 +158,6 @@ TikTok profile extraction is not perfectly reliable and can change without notic
 
 The script downloads the executable directly from the official yt-dlp GitHub release repository. Review the URL in the PowerShell script and allow it only if you are comfortable doing so.
 
-## GitHub publishing
-
-Create an empty GitHub repository, then run these commands from this folder after installing Git:
-
-```powershell
-git init
-git add .
-git commit -m "Initial release"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/tiktok-profile-backup.git
-git push -u origin main
-```
-
-Do not add `cookies.txt`, downloaded videos, or `.tools`; `.gitignore` excludes them.
-
 ## Limitations
 
 - Public and otherwise accessible posts only.
