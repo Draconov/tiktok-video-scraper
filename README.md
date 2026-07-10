@@ -1,6 +1,6 @@
 # TikTok Profile Backup
 
-A Windows downloader for backing up **publicly accessible videos** from a TikTok profile.
+A Windows downloader for backing up **publicly accessible videos** from a TikTok profile at the highest available quality exposed by yt-dlp, while excluding formats explicitly marked as watermarked.
 
 Paste any TikTok profile URL, `@username`, or username. The script downloads the profile with [yt-dlp](https://github.com/yt-dlp/yt-dlp), keeps a per-profile download archive, renames each video from its post date and author caption, and writes a searchable CSV catalog.
 
@@ -24,11 +24,17 @@ Long captions are shortened only in the Windows filename. The complete original 
 - Accepts a full profile URL, `@username`, or plain username.
 - Creates a separate backup folder for each TikTok account.
 - Downloads only new posts when run again.
+- Selects the highest-quality format available without forcing H.264.
+- Excludes formats that yt-dlp explicitly labels as watermarked.
+- Automatically installs FFmpeg/FFprobe for merging and audio verification.
+- Checks every new download for a real audio stream.
+- Scans previously downloaded videos and repairs silent files.
+- Retries a silent video from a fresh TikTok extraction using the same quality and codec policy.
+- Quarantines files that remain silent after all retries and removes their IDs from the archive so a later run can try again.
 - Uses browser cookies, `cookies.txt`, or anonymous access.
 - Supports Brave, Chrome, Edge, and Firefox.
-- Keeps full captions, post URLs, IDs, and dates in `catalog.csv`.
+- Keeps full captions, post URLs, IDs, audio status, retry counts, and hashes in `catalog.csv`.
 - Stores original yt-dlp metadata and timestamped logs.
-- Automatically downloads and updates the official yt-dlp Windows binary.
 - Handles invalid Windows filename characters and duplicate captions.
 - Does not attempt to access private accounts.
 
@@ -40,6 +46,13 @@ Long captions are shortened only in the Windows filename. The complete original 
 - A browser logged into TikTok may be needed when anonymous access is blocked.
 
 No Python installation is required.
+
+On the first run, the script downloads:
+
+- `yt-dlp.exe` from the official yt-dlp GitHub releases.
+- `ffmpeg.exe` and `ffprobe.exe` from the BtbN FFmpeg Windows builds.
+
+These tools are stored in `.tools/`, which is excluded by `.gitignore`.
 
 ## Quick start
 
@@ -97,17 +110,36 @@ Skip the yt-dlp update check:
 .\TikTok-Profile-Backup.ps1 "@username" -SkipUpdate
 ```
 
+Choose how many fresh retries are made when a file has no audio stream:
+
+```powershell
+.\TikTok-Profile-Backup.ps1 "@username" -SilentRetryCount 3
+```
+
+Skip the scan of previously downloaded videos while still checking new downloads:
+
+```powershell
+.\TikTok-Profile-Backup.ps1 "@username" -SkipExistingAudioScan
+```
+
+Disable FFprobe checking and silent-file repair entirely:
+
+```powershell
+.\TikTok-Profile-Backup.ps1 "@username" -SkipAudioCheck
+```
+
 ## Folder layout
 
 ```text
 downloads\
 └── @username\
-    ├── videos\                 Final renamed videos
+    ├── videos\                 Final renamed videos with verified audio streams
     ├── _raw\                   Temporary downloads
     ├── _metadata\              Original yt-dlp metadata
     ├── _logs\                  Session and yt-dlp logs
-    ├── catalog.csv             Full searchable catalog
-    └── download_archive.txt    Prevents duplicate downloads
+    ├── _silent\                Files still silent after all retries
+    ├── catalog.csv              Full searchable catalog and audio status
+    └── download_archive.txt     Prevents duplicate downloads
 ```
 
 The `.tools` directory is created automatically and contains `yt-dlp.exe`.
@@ -128,6 +160,23 @@ You can also export TikTok cookies in Netscape `cookies.txt` format and place `c
 ## Updating an existing backup
 
 Run the same profile again. `download_archive.txt` makes yt-dlp skip videos that were already downloaded.
+
+
+## Audio verification and retry behavior
+
+The script does not trust TikTok's metadata alone. After downloading a file, it asks FFprobe whether the finished container actually contains an audio stream.
+
+When no audio stream is detected:
+
+1. The script performs a completely fresh download of that individual TikTok post.
+2. It uses the same browser/cookie method that succeeded for the profile.
+3. It uses the same unrestricted codec policy—**H.264 is never forced**.
+4. It again selects the highest-quality format that is not explicitly marked as watermarked.
+5. It calculates a SHA-256 hash for each silent result and writes the hashes to the log and `catalog.csv`.
+6. It retries up to `-SilentRetryCount` times.
+7. If every retry is still silent, the file is moved into `_silent`, its catalog status becomes `silent_after_retries`, and its ID is removed from `download_archive.txt` so a future run can try again.
+
+FFprobe checks whether an audio stream exists. It does not analyze whether an existing audio track contains audible volume. An intentionally silent TikTok post will therefore be treated as missing audio only when the file has no audio stream at all.
 
 ## Troubleshooting
 
@@ -150,6 +199,21 @@ Run the same profile again. `download_archive.txt` makes yt-dlp skip videos that
 
 Close every window and background process belonging to that browser. If it still fails, try another logged-in browser or use a manually exported `cookies.txt`.
 
+
+### A video is silent
+
+Run the same profile again. Version 1.1.0 scans existing files, queues any file without an audio stream, and retries it automatically.
+
+Check:
+
+```text
+downloads\@username\_logs
+downloads\@username\_silent
+downloads\@username\catalog.csv
+```
+
+A catalog status of `repaired_audio_after_retry_1` (or a later number) means a fresh retry worked. `silent_after_retries` means TikTok kept returning a file without an audio stream. The script does not force H.264.
+
 ### Some profile videos are missing
 
 TikTok profile extraction is not perfectly reliable and can change without notice. Update yt-dlp, try the nightly channel, retry later, and compare `catalog.csv` against the public profile.
@@ -164,7 +228,9 @@ The script downloads the executable directly from the official yt-dlp GitHub rel
 - TikTok may rate-limit, block, or change profile extraction.
 - Profile pagination can occasionally return an incomplete set.
 - Deleted, region-restricted, age-restricted, friends-only, and private posts may be unavailable.
-- The script does not remove watermarks.
+- The script excludes formats that yt-dlp explicitly identifies as watermarked; it does not modify pixels or remove creator-burned logos/text.
+- TikTok or extractor metadata can be incomplete, so a watermark-free result cannot be guaranteed for every post.
+- FFprobe detects missing audio streams, not tracks that technically exist but contain silence.
 - Windows is the supported operating system for this repository.
 
 ## Responsible use
