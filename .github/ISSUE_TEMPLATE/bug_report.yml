@@ -27,7 +27,7 @@ body:
         - chrome
         - edge
         - firefox
-        - none
+        - anonymous / no browser cookies
         - cookies.txt
     validations:
       required: true
