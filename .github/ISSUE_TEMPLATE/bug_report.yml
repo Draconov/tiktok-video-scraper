@@ -1,0 +1,64 @@
+name: Bug report
+description: Report a reproducible downloader problem
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Remove usernames, local paths, cookies, and other private information before posting logs.
+
+  - type: input
+    id: version
+    attributes:
+      label: Repository version
+      placeholder: 1.0.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser mode
+      options:
+        - auto
+        - brave
+        - chrome
+        - edge
+        - firefox
+        - none
+        - cookies.txt
+    validations:
+      required: true
+
+  - type: dropdown
+    id: channel
+    attributes:
+      label: yt-dlp channel
+      options:
+        - stable
+        - nightly
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Sanitized log
+      description: Remove usernames, local paths, cookies, and private data.
+      render: shell
