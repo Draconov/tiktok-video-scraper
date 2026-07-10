@@ -1,0 +1,21 @@
+# Downloaded tools and user data
+.tools/
+downloads/
+cookies.txt
+
+# yt-dlp temporary files
+*.part
+*.ytdl
+
+# Logs
+startup_log.txt
+*.log
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
