@@ -18,6 +18,10 @@ The script downloads `yt-dlp.exe` directly from one of these official release re
 - `yt-dlp/yt-dlp`
 - `yt-dlp/yt-dlp-nightly-builds`
 
+For audio verification and merging, it also downloads a Windows FFmpeg build from:
+
+- `BtbN/FFmpeg-Builds`
+
 Review `TikTok-Profile-Backup.ps1` before running it if you need to audit the exact URLs.
 
 ## Reporting a vulnerability
